@@ -78,7 +78,7 @@
   (when-let [s @*server]
     (try
       ((:server s))
-      (catch Exception e (println "ERROR: " e)))
+      (catch Exception e (println "ups; can not stop server")))
     (reset! *server nil)))
 
 (defn start [{{app :app :as env} :env :as m}]
