@@ -16,7 +16,7 @@
         url (str (:scheme box) "://" (:host box) ":" (:port box) (:url opts))
         res @(http/request
               {:url url
-               :method :post
+               :method (or (:method opts) :get)
                :basic-auth [(:id app) (:secret app)]
                :headers {"content-type" "application/json"}
                :body (when (:body opts) (json/generate-string (:body opts)))})]
@@ -25,7 +25,7 @@
 (defn query
   "sql - sql string"
   [ctx sql]
-  (let [res (box-request ctx {:url "/$sql" :body sql})]
+  (let [res (box-request ctx {:url "/$sql" :method :post :body sql})]
     (if (and (:status res) (< (:status res) 300))
       (:body res)
       (do (println "ERROR: " res)
@@ -90,3 +90,22 @@
                     {:port (:port app)})]
         (reset! *server {:server server :config m}))
       (throw (Exception. (str "Failed to start app: " res))))))
+
+(defn read
+  "res - resource"
+  [ctx res]
+  (let [res (box-request ctx {:url (str "/" (:resourceType res) "/" (:id res))})]
+    (if (and (:status res) (< (:status res) 300))
+      (:body res)
+      (do (println "ERROR: " res)
+          (throw (Exception. (pr-str res)))))))
+
+
+;; Naming - FHIR like or custom ??
+;; :entities vs :envtity
+;; :attrs vs :attribute
+
+;; CRUD
+;; Raw resources (clients jobs ....)
+
+
