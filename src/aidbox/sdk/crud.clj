@@ -27,8 +27,8 @@
 (defn create
   [ctx res]
   (let [res (request ctx {:url (str "/" (:resourceType res))
-                              :method :post
-                              :body res})]
+                          :method :post
+                          :body res})]
     (if (and (:status res) (< (:status res) 300))
       (:body res)
       (do (println "ERROR: " res)
@@ -37,8 +37,8 @@
 (defn update
   [ctx res]
   (let [res (request ctx {:url (str "/" (:resourceType res) "/" (:id res))
-                              :method :put
-                              :body res})]
+                          :method :put
+                          :body res})]
     (if (and (:status res) (< (:status res) 300))
       (:body res)
       (do (println "ERROR: " res)

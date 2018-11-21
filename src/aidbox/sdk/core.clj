@@ -32,7 +32,7 @@
                         {:status 500 :body {:message (pr-str e)}}))]
         (-> resp
             (update :status (fn [x] (or x 200)))
-            (update :headers (fn [x] (merge (or x {}) {"content-type" "applicaiton/json"})))
+            (update :headers (fn [x] (merge (or x {}) {"content-type" "application/json"})))
             (update :body (fn [x] (when x (generate-json x)))))))))
 
 (defn stop []
