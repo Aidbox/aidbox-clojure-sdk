@@ -1,5 +1,6 @@
 (ns aidbox.sdk.core
-  (:require [org.httpkit.server :as server]
+  (:require [clojure.tools.logging :as log]
+            [org.httpkit.server :as server]
             [aidbox.sdk.crud :as crud]
             [aidbox.sdk.utils :refer [parse-json generate-json]]))
 
@@ -25,7 +26,7 @@
 
 (defn dispatch [ctx req]
   (let [req (update req :body parse-json)]
-    (let [a-req (:body req) 
+    (let [a-req (:body req)
           op-id (get-in a-req [:operation :id])]
       (let [resp (try (endpoint ctx (assoc a-req :id (keyword op-id)))
                       (catch Exception e
@@ -39,7 +40,7 @@
   (when-let [s @*server]
     (try
       ((:server s))
-      (catch Exception e (println "ups; can not stop server")))
+      (catch Exception e (log/info "ups; can not stop server")))
     (reset! *server nil)))
 
 (defn start [{{app :app :as env} :env :as m}]
@@ -48,6 +49,7 @@
     (let [server (server/run-server
                   (fn [req] (dispatch m req))
                   {:port (:port app)})]
+      (log/info (str "Listening port " (:port app) "..."))
       (reset! *server {:server server :config m}))))
 
 
