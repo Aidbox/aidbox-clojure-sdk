@@ -2,7 +2,8 @@
   (:require [clojure.tools.logging :as log]
             [org.httpkit.server :as server]
             [aidbox.sdk.crud :as crud]
-            [aidbox.sdk.utils :refer [parse-json generate-json]]))
+            [aidbox.sdk.utils :refer [parse-json generate-json]]
+            [cheshire.core :as json]))
 
 (defn- init-manifest [ctx]
   (crud/create
@@ -26,15 +27,24 @@
 
 (defn dispatch [ctx req]
   (let [req (update req :body parse-json)]
-    (let [a-req (:body req)
-          op-id (get-in a-req [:operation :id])]
-      (let [resp (try (endpoint ctx (assoc a-req :id (keyword op-id)))
-                      (catch Exception e
-                        {:status 500 :body {:message (pr-str e)}}))]
-        (-> resp
-            (update :status (fn [x] (or x 200)))
-            (update :headers (fn [x] (merge (or x {}) {"content-type" "application/json"})))
-            (update :body (fn [x] (when x (generate-json x)))))))))
+    (let [a-req (:body req)]
+      (cond (= "operation" (:type a-req))
+            (let [op-id (get-in a-req [:operation :id])
+                  resp (try (endpoint ctx (assoc (:request a-req) :id (keyword op-id)))
+                            (catch Exception e
+                              {:status 500 :body {:message (pr-str e)}}))]
+              (-> resp
+                  (update :status (fn [x] (or x 200)))
+                  (update :headers (fn [x] (merge (or x {}) {"content-type" "application/json"})))
+                  (update :body (fn [x] (when x (generate-json x))))))
+            (= "init" (:type a-req))
+            {:stautus 200
+             :headers {"content-type" "application/json"}
+             :body (json/generate-string {:message "Ok!" :request a-req})}
+            :else
+            {:status 422
+             :headers {"content-type" "application/json"}
+             :body (json/generate-string {:message (str "Unknown message type [" (:type a-req) "]")})}))))
 
 (defn stop []
   (when-let [s @*server]
