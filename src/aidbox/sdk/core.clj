@@ -1,20 +1,32 @@
 (ns aidbox.sdk.core
   (:require [clojure.tools.logging :as log]
             [org.httpkit.server :as server]
+            [org.httpkit.client :as http]
             [aidbox.sdk.crud :as crud]
             [aidbox.sdk.utils :refer [parse-json generate-json]]
             [cheshire.core :as json]))
 
-(defn build-manifest [ctx]
-  (assoc (dissoc ctx :env)
+(defn build-manifest [{m :manifest env :env :as ctx}]
+  (assoc (:manifest ctx)
          :resourceType "App"
          :apiVersion 1
-         :endpoint (assoc (select-keys (get-in ctx [:env :app]) [:host :port :scheme])
-                          :type "http-rpc")
+         :endpoint {:url (:app-url env)
+                    :type "http-rpc"
+                    :secret (:app-secret env)}
          :type (or (:type ctx) "app")))
 
-(defn- init-manifest [ctx]
-  (crud/create ctx (build-manifest ctx)))
+(defn- init [{env :env :as ctx}]
+  ;; send init request
+  ;; (crud/create ctx (build-manifest ctx))
+  (let [resp @(http/request
+              {:url (str (:init-url env) "/App/$init")
+               :method :post
+               :basic-auth [(:init-client-id env) (:init-client-secret env)]
+               :headers {"content-type" "application/json"}
+               :body (generate-json {:url (:app-url env)
+                                     :secret (:app-secret env)})})]
+    (println (:body resp))
+    resp))
 
 (defmulti endpoint (fn [ctx {id :id}] (keyword id)))
 
@@ -31,42 +43,52 @@
     (let [a-req (:body req)]
       (cond (= "operation" (:type a-req))
             (let [op-id (get-in a-req [:operation :id])
-                  resp (try (endpoint ctx (assoc (:request a-req) :id (keyword op-id)))
+                  box (:box a-req)
+                  client (get-in @(:state ctx) [:boxes (:base-url box) :client])
+                  _ (println "box" box "client" client)
+                  resp (try (endpoint (assoc ctx :box box :client client)
+                                      (assoc (:request a-req) :id (keyword op-id)))
                             (catch Exception e
                               {:status 500 :body {:message (pr-str e)}}))]
+              (println "Operation: " a-req)
               (-> resp
                   (update :status (fn [x] (or x 200)))
                   (update :headers (fn [x] (merge (or x {}) {"content-type" "application/json"})))
                   (update :body (fn [x] (when x (generate-json x))))))
-            (= "init" (:type a-req))
+
+            (= "manifest" (:type a-req))
             {:status 200
              :headers {"content-type" "application/json"}
              :body (json/generate-string {:manifest (build-manifest ctx)})}
+
+            (= "config" (:type a-req))
+            (do 
+              (swap! (:state ctx) (fn [s]
+                                    (println "Config" a-req)
+                                    (assoc-in s [:boxes (get-in a-req [:box :base-url])] a-req)))
+              {:status 200
+               :headers {"content-type" "application/json"}
+               :body (json/generate-string {})})
+
             :else
             {:status 422
              :headers {"content-type" "application/json"}
              :body (json/generate-string {:message (str "Unknown message type [" (:type a-req) "]")})}))))
 
-(defn stop []
-  (when-let [s @*server]
+(defn stop [state]
+  (when-let [s @state]
     (try
       ((:server s))
       (catch Exception e (log/info "ups; can not stop server")))
-    (reset! *server nil)))
+    (swap! state dissoc :server)))
 
-(defn start [{{app :app :as env} :env :as m}]
-  (stop)
-  (let [_ (init-manifest m)]
-    (let [server (server/run-server
-                  (fn [req] (dispatch m req))
-                  {:port (:port app)})]
-      (log/info (str "Listening port " (:port app) "..."))
-      (reset! *server {:server server :config m}))))
-
-
-;; Naming - FHIR like or custom ??
-;; :entities vs :envtity
-;; :attrs vs :attribute
-
-;; CRUD
-;; Raw resources (clients jobs ....)
+(defn start* [state {env :env :as ctx}]
+  (stop state)
+  (let [port (when-let [p (:app-port env)]
+               (if (int? p) p (Integer/parseInt p)))
+        ctx (assoc ctx :state state)
+        server (server/run-server (fn [req] (dispatch ctx req)) {:port port})]
+    (log/info (str "Listening port " port "..."))
+    (init ctx)
+    (swap! state assoc :server server)
+    ctx))

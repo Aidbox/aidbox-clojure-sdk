@@ -3,14 +3,15 @@
             [aidbox.sdk.utils :refer [parse-json generate-json]]))
 
 (defn request [ctx opts]
-  (let [ctx (:env ctx)
-        app (:app ctx)
+  (let [app (:app ctx)
         box (:box ctx)
-        url (str (:scheme box) "://" (:host box) ":" (:port box) (:url opts))
+        url (str (:base-url box) (:url opts))
+        client (:client ctx)
+        _ (println "HTTP to box:" box (or (:method opts) :get) url)
         res @(http/request
               {:url url
                :method (or (:method opts) :get)
-               :basic-auth [(:id app) (:secret app)]
+               :basic-auth [(:id client) (:secret client)]
                :headers {"content-type" "application/json"}
                :body (when (:body opts) (generate-json (:body opts)))})]
     (update res :body parse-json)))
