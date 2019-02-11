@@ -29,12 +29,18 @@
     resp))
 
 (defmulti endpoint (fn [ctx {id :id}] (keyword id)))
+(defmulti subscription (fn [ctx {handler :handler}] (keyword handler)))
 
 (defmethod endpoint
   :default
   [ctx {id :id}]
   {:status 404
    :body {:message (str "Endpoint [" id "] not found")}})
+
+(defmethod subscription
+  :default
+  [ctx {handler :handler}]
+  (println "Subscription handler [" (keyword handler) "] is not registered"))
 
 (defonce *server (atom nil?))
 
@@ -62,14 +68,20 @@
              :body (json/generate-string {:manifest (build-manifest ctx)})}
 
             (= "config" (:type a-req))
-            (do 
+            (do
               (swap! (:state ctx) (fn [s]
                                     (println "Config" a-req)
                                     (assoc-in s [:boxes (get-in a-req [:box :base-url])] a-req)))
               {:status 200
                :headers {"content-type" "application/json"}
                :body (json/generate-string {})})
-
+            (= "subscription" (:type a-req))
+            (let [e (:event a-req)]
+              (println "Subscription: " a-req)
+              (subscription ctx a-req)
+              {:status 200
+               :headers {"content-type" "application/json"}
+               :body (json/generate-string {})})
             :else
             {:status 422
              :headers {"content-type" "application/json"}
