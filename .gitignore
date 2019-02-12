@@ -1,3 +1,5 @@
 .cpcache/
 .DS_Store
 example/config/jwtRS256.*
+.env
+.nrepl-port

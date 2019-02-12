@@ -2,7 +2,8 @@
  :deps {environ {:mvn/version "1.1.0"}
         clj-http {:mvn/version "3.6.1"}
         honeysql {:mvn/version "0.9.4"}
-        aidbx-sdk {:local/root "../"}
+        http-kit                       {:mvn/version "2.2.0"}
+        cheshire                       {:mvn/version "5.6.3"}
         }
 
  :mvn/repos {"central" {:url "https://repo1.maven.org/maven2/"}

@@ -2,12 +2,12 @@
   (:require [aidbox.sdk.core :as aidbox]))
 
 (def env
-  {:init-url "http://localhost:8080"
+  {:init-url "http://devbox:8080"
    :init-client-id (or (System/getenv "APP_INIT_CLIENT_ID") "root")
    :init-client-secret (or (System/getenv "APP_INIT_CLIENT_SECRET") "secret")
 
    :app-id (or (System/getenv "APP_ID") "app-example")
-   :app-url (or (System/getenv "APP_URL") "http://localhost:8989")
+   :app-url (or (System/getenv "APP_URL") "http://app:8989")
    :app-port (Integer/parseInt (or (System/getenv "APP_PORT") "8989"))
    :app-secret (or (System/getenv "APP_SECRET") "secret")})
 
