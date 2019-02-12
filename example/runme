@@ -1,0 +1,46 @@
+#!/bin/sh
+set -e
+
+sub_help(){
+    echo "Usage: $ProgName <subcommand> [options]\n"
+    echo "Subcommands:"
+    echo "    repl   - start repl"
+    echo "    tests  - run tests"
+    echo ""
+    echo "For help with each subcommand run:"
+    echo "$ProgName <subcommand> -h|--help"
+    echo ""
+}
+
+sub_repl(){
+
+  echo "Starting repl..."
+
+  clj -A:test:nrepl -e "(-main)"
+}
+
+
+sub_tests(){
+  echo "Running tests..."
+  clj -A:test:runner $@
+}
+
+subcommand=$1
+case $subcommand in
+    "" | "-h" | "--help")
+        sub_help
+        ;;
+    *)
+        shift
+        sub_${subcommand} $@
+        code=$?
+        if [ $code = 127 ]; then
+            echo "Error: '$subcommand' is not a known subcommand." >&2
+            echo "       Run '$ProgName --help' for a list of known subcommands." >&2
+            exit 1
+        else
+            exit $code
+        fi
+        ;;
+esac
+

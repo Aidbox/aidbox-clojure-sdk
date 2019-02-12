@@ -1,0 +1,33 @@
+{:paths ["src" "../src" "resources"]
+ :deps {environ {:mvn/version "1.1.0"}
+        clj-http {:mvn/version "3.6.1"}
+        honeysql {:mvn/version "0.9.4"}
+        aidbx-sdk {:local/root "../"}
+        }
+
+ :mvn/repos {"central" {:url "https://repo1.maven.org/maven2/"}
+             "clojars" {:url "https://repo.clojars.org/"}}
+
+ :aliases {:uberjar {:extra-deps {xfthhxk/cambada {:git/url "https://github.com/xfthhxk/cambada.git"
+                                                   :sha "8fdc7d29a41620ad3e9e6210fd7140f3a4c7936b"}}
+                     :main-opts ["-m" "cambada.uberjar"
+                                 "-a" "all"
+                                 "--app-artifact-id" "app" "--app-version" "0.1.0"
+                                 "-m" "app.core" "--no-copy-source"]}
+           :nrepl
+           {:extra-deps
+            {spyscope {:mvn/version "0.1.6"}
+             org.clojure/tools.nrepl {:mvn/version "0.2.13"}
+             cider/cider-nrepl {:mvn/version "0.18.0-SNAPSHOT"}
+             refactor-nrepl/refactor-nrepl {:mvn/version "2.4.0-SNAPSHOT"}}
+            :extra-paths ["dev"]}
+
+           :test {:extra-deps
+                  {com.cognitect/test-runner
+                   {:git/url "https://github.com/cognitect-labs/test-runner"
+                    :sha "3cb0a9daf1cb746259dc8309b218f9211ad3b33b"}}
+                  :jvm-opts ^:replace ["-XX:-OmitStackTraceInFastThrow"]
+                  :extra-paths ["test"]}
+
+           :runner
+           {:main-opts ["-m" "cognitect.test-runner"]}}}
