@@ -26,6 +26,8 @@
 (defonce state (atom {}))
 
 (defn -main []
+  (println "Starting with")
+  (clojure.pprint/pprint ctx)
   (aidbox/start* state ctx)
   )
 
