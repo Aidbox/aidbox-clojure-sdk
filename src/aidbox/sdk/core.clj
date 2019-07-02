@@ -24,6 +24,7 @@
                :basic-auth [(:init-client-id env) (:init-client-secret env)]
                :headers {"content-type" "application/json"}
                :body (generate-json {:url (:app-url env)
+                                     :app_id (:app-id env)
                                      :secret (:app-secret env)})})]
     (println (:body resp))
     resp))
