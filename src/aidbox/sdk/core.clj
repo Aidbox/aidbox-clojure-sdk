@@ -52,12 +52,10 @@
             (let [op-id (get-in a-req [:operation :id])
                   box (:box a-req)
                   client (get-in @(:state ctx) [:boxes (:base-url box) :client])
-                  _ (println "box" box "client" client)
                   resp (try (endpoint (assoc ctx :box box :client client)
                                       (assoc (:request a-req) :id (keyword op-id)))
                             (catch Exception e
                               {:status 500 :body {:message (pr-str e)}}))]
-              (println "Operation: " a-req)
               (-> resp
                   (update :status (fn [x] (or x 200)))
                   (update :headers (fn [x] (merge (or x {}) {"content-type" "application/json"})))
